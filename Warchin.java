@@ -10,7 +10,7 @@ import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 //import java.awt.Color;
 import java.awt.Color;
-//Hi
+
 // API help : https://robocode.sourceforge.io/docs/robocode/robocode/Robot.html
 
 /**
@@ -82,14 +82,11 @@ public class Warchin extends Robot
 		// Note:  This will have no effect until we call scan()
 		
 		// If we don't have a target, well, now we do!
-		if (trackName == null) {
+		if (trackName == null && trackName != "SentryBot") {
 			trackName = e.getName();
 			out.println("Tracking " + trackName);
 		}
 		
-		if (trackName == "SentryBot") {
-			turnRight(20);
-		}
 		
 
 		else {
@@ -115,7 +112,7 @@ public class Warchin extends Robot
 		 
     
          turnRight(90 - bearing); //turn to right or left depending the angle
-         ahead(200); // move ahead 100
+         ahead(200); // move ahead 200
 		 
 	
 	}
@@ -124,10 +121,20 @@ public class Warchin extends Robot
 	 */
 	public void onHitByBullet(HitByBulletEvent e) {
 		 double bearing = e.getBearing(); //look where the bullet come from
-		 if (math.abs(bearing) > 45 )
-    
-         turnRight(bearing); //turn to right or left depending the angle
-         ahead(200); // move ahead 200 
+		 if (Math.abs(bearing) < 45 && Math.abs(bearing) < 135){
+			 
+			  turnRight(90); //turn to right or left depending the angle
+			  ahead(200);
+			  turnGunRight(bearing);
+			  back(200);
+		 }
+		 
+		 else{
+			 ahead(200);
+			 back(200);
+		 }
+         //
+         //ahead(200); // move ahead 200 
 		 
 		
 	}
@@ -140,10 +147,11 @@ public class Warchin extends Robot
 	public void onHitWall(HitWallEvent e) {
 		// Replace the next line with any behavior you would like
 		 double hit_wall = e.getBearing(); //look where the wall is
+		 double torrent = getGunHeading(); //look where the gun is
     
-         turnRight(90 - hit_wall); //turn to right or left depending the angle
+         turnRight(180 - hit_wall); //turn to right or left depending the angle
          ahead(200); // move ahead 200
-		 turnGunRight(atomic_gun);
+		 turnGunRight(((torrent - hit_wall)-torrent) + hit_wall);
 		
 	}	
 	
