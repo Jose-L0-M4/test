@@ -1,0 +1,135 @@
+package roborumble;
+
+// Importing necessary Robocode classes
+import robocode.*;
+import robocode.HitRobotEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+import robocode.WinEvent;
+import static robocode.util.Utils.normalRelativeAngleDegrees;
+
+import java.awt.Color;
+
+/**
+ * Warchin - a robot by (Jose Lo Mantilla)
+ * This robot moves in a zigzag pattern, searches for enemies, and engages in combat when a robot is detected.
+ */
+public class Warchin extends Robot {
+    int count = 0; // Keeps track of how long we've been searching for a target
+    double atomic_gun; // Angle adjustment for the gun when searching
+    String trackName; // Stores the name of the robot being tracked
+    double movement; // Movement distance
+
+    /**
+     * run: The main behavior loop of Warchin.
+     * - Initializes colors.
+     * - Sets up gun tracking.
+     * - Moves in a zigzag pattern while scanning for enemies.
+     */
+    public void run() {
+        movement = Math.max(getBattleFieldWidth(), getBattleFieldHeight());
+
+        // Set robot colors
+        setBodyColor(new Color(255, 190, 11));
+        setGunColor(new Color(57, 0, 153));
+        setRadarColor(new Color(57, 0, 153));
+        setScanColor(Color.white);
+        setBulletColor(Color.blue);
+
+        // Initialize gun tracking
+        trackName = null; 
+        setAdjustGunForRobotTurn(true); 
+        atomic_gun = 30; 
+
+        // Align with battlefield grid
+        turnLeft(getHeading() % 90);
+
+        // Movement loop
+        while (true) {
+            ahead(100);
+            turnRight(60);
+            back(100);
+            turnGunRight(360);
+        }
+    }
+
+    /**
+     * onScannedRobot: Engages an enemy when detected.
+     * - Tracks an enemy robot.
+     * - Adjusts gun towards the target.
+     * - Fires at the opponent when aligned properly.
+     * - Continues scanning if the target is not eliminated.
+     */
+    public void onScannedRobot(ScannedRobotEvent e) {
+        if (trackName == null) {
+            trackName = e.getName();
+        }
+
+        double absAngle = getHeading() + e.getBearing();
+        double gunMovement = normalRelativeAngleDegrees(absAngle - getGunHeading());
+        fire(3);
+
+        if (Math.abs(gunMovement) <= 3 && !(trackName.contains("SentryBot"))) {
+            turnGunRight(gunMovement);
+            if (getGunHeat() == 0) {
+                fire(Math.min(3 - Math.abs(gunMovement), getEnergy() - 0.1));
+            }
+        } else {
+            turnGunRight(gunMovement);
+        }
+
+        if (gunMovement == 0 && !(trackName.contains("SentryBot"))) {
+            scan();
+        }
+    }
+
+    /**
+     * onHitRobot: Fires back when colliding with another robot.
+     * - Adjusts gun towards the colliding robot and fires.
+     */
+    public void onHitRobot(HitRobotEvent e) {
+        double bearing = e.getBearing();
+        atomic_gun = normalRelativeAngleDegrees(e.getBearing() + (getHeading() - getRadarHeading()));
+        turnGunRight(atomic_gun);
+        fire(2);
+    }
+
+    /**
+     * onHitByBullet: Evades when hit by a bullet.
+     * - Identifies the bullet's origin.
+     * - Turns perpendicular to the bullet's direction and moves away.
+     */
+    public void onHitByBullet(HitByBulletEvent e) {
+        double bearing = e.getBearing();
+        atomic_gun = normalRelativeAngleDegrees(e.getBearing() + (getHeading() - getRadarHeading()));
+        turnGunRight(atomic_gun);
+
+        if (bearing < 45 || bearing > -45 || bearing > 135 || bearing < -135) {
+            turnRight(normalRelativeAngleDegrees(bearing - 90));
+            ahead(100);
+        } else {
+            ahead(100);
+        }
+    }
+
+    /**
+     * onHitWall: Adjusts movement when hitting a wall.
+     * - Turns away from the wall and moves forward to avoid getting stuck.
+     */
+    public void onHitWall(HitWallEvent e) {
+        double bearing = e.getBearing();
+        turnRight(bearing - 90);
+        ahead(200);
+    }
+
+    /**
+     * onWin: Performs a victory dance after winning.
+     * - Spins around and rotates the gun in celebration.
+     */
+    public void onWin(WinEvent e) {
+        for (int i = 0; i < 50; i++) {
+            turnRight(360);
+            turnGunLeft(360);
+        }
+    }
+}
